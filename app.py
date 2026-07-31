@@ -9,6 +9,7 @@ from firebase_config import (
     is_firebase_ready,
     save_memory,
     get_all_memories,
+    delete_memory,
 )
 
 load_dotenv()
@@ -54,6 +55,31 @@ def save_memory_route():
 def api_memories():
     memories = get_all_memories()
     return jsonify({"success": True, "memories": memories})
+
+
+DELETE_PASSWORD = os.getenv("DELETE_PASSWORD", "1993")
+
+
+@app.route("/api/delete-memory", methods=["POST"])
+def api_delete_memory():
+    try:
+        data = request.get_json(silent=True) or {}
+        memory_id = (data.get("id") or "").strip()
+        password = str(data.get("password") or "").strip()
+
+        if not memory_id:
+            return jsonify({"success": False, "error": "Memory ID required"}), 400
+
+        if password != DELETE_PASSWORD:
+            return jsonify({"success": False, "error": "Incorrect password"}), 403
+
+        result = delete_memory(memory_id)
+        if result.get("success"):
+            return jsonify({"success": True})
+        else:
+            return jsonify({"success": False, "error": "Memory not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/admin/qrcode", methods=["GET", "POST"])

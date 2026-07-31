@@ -90,16 +90,57 @@
 
     <div class="lightbox" id="lightbox">
         <div class="lightbox-content">
-            <button class="lightbox-close" id="lightboxClose">
+            <button class="lightbox-close" id="lightboxClose" aria-label="Close">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <button class="lightbox-delete" id="lightboxDelete" aria-label="Delete photo">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
                 </svg>
             </button>
             <img id="lightboxImage" src="" alt="">
             <div class="lightbox-info">
                 <p class="lightbox-name" id="lightboxName"></p>
                 <p class="lightbox-comment" id="lightboxComment"></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="deleteModal">
+        <div class="modal-card">
+            <button class="modal-close" id="modalClose" aria-label="Close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <div class="modal-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+            </div>
+            <h3 class="modal-title">Delete This Memory?</h3>
+            <p class="modal-subtitle">This action cannot be undone. Enter the password to confirm.</p>
+            <div class="modal-form-group">
+                <label for="deletePasswordInput">Password</label>
+                <input type="password" id="deletePasswordInput" placeholder="Enter password..." autocomplete="off">
+            </div>
+            <p class="modal-error hidden" id="modalError">Incorrect password</p>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="modalCancelBtn">Cancel</button>
+                <button class="btn-primary btn-danger" id="modalConfirmBtn">
+                    <span class="btn-text">Delete Forever</span>
+                    <div class="spinner hidden"></div>
+                </button>
             </div>
         </div>
     </div>

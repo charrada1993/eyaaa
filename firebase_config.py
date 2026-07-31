@@ -365,3 +365,44 @@ def get_all_memories():
         pass
 
     return memories
+
+
+def delete_memory(memory_id):
+    memory_id = str(memory_id).strip()
+    if not memory_id:
+        return {"success": False, "error": "Invalid memory ID"}
+
+    deleted_local = False
+    deleted_fb = False
+    deleted_storage = False
+
+    with _lock:
+        store = _read_local()
+        if memory_id in store:
+            del store[memory_id]
+            _write_local(store)
+            deleted_local = True
+
+    if _firebase_initialized and _db is not None:
+        try:
+            _db.child("memories").child(memory_id).delete()
+            deleted_fb = True
+        except Exception:
+            pass
+
+    if _firebase_initialized and _bucket is not None:
+        try:
+            file_name = f"memories/{memory_id}.jpg"
+            blob = _bucket.blob(file_name)
+            if blob.exists():
+                blob.delete()
+                deleted_storage = True
+        except Exception:
+            pass
+
+    return {
+        "success": deleted_local or deleted_fb,
+        "deleted_local": deleted_local,
+        "deleted_fb": deleted_fb,
+        "deleted_storage": deleted_storage,
+    }

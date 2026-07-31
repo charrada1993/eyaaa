@@ -7,7 +7,16 @@
     const lightboxName = document.getElementById('lightboxName');
     const lightboxComment = document.getElementById('lightboxComment');
     const lightboxClose = document.getElementById('lightboxClose');
+    const lightboxDelete = document.getElementById('lightboxDelete');
     const galleryCount = document.getElementById('galleryCount');
+    const deleteModal = document.getElementById('deleteModal');
+    const deletePasswordInput = document.getElementById('deletePasswordInput');
+    const modalError = document.getElementById('modalError');
+    const modalClose = document.getElementById('modalClose');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+
+    let currentMemoryId = null;
 
     function vibrate(pattern) {
         try {
@@ -35,8 +44,181 @@
         applyServerRenderedPhotoData();
         formatMemoryDates();
         setupLightbox();
+        setupDeleteModal();
         setupAutoRefresh();
         setupViewportFix();
+    }
+
+    function setupDeleteModal() {
+        if (!deleteModal) return;
+
+        const closeModal = () => {
+            deleteModal.classList.add('hidden');
+            modalError.classList.add('hidden');
+            deletePasswordInput.value = '';
+            modalConfirmBtn.classList.remove('loading');
+            modalConfirmBtn.disabled = false;
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+        };
+
+        const openModal = () => {
+            vibrate(30);
+            modalError.classList.add('hidden');
+            deletePasswordInput.value = '';
+            deleteModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'none';
+            setTimeout(() => {
+                try { deletePasswordInput.focus(); } catch (_) {}
+            }, 150);
+        };
+
+        if (lightboxDelete) {
+            lightboxDelete.addEventListener('click', () => {
+                if (!currentMemoryId) return;
+                openModal();
+            });
+        }
+
+        modalClose.addEventListener('click', closeModal);
+        modalCancelBtn.addEventListener('click', closeModal);
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) closeModal();
+        });
+
+        deletePasswordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                modalConfirmBtn.click();
+            } else if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !deleteModal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        modalConfirmBtn.addEventListener('click', async () => {
+            if (!currentMemoryId) return;
+            const pwd = deletePasswordInput.value;
+
+            if (!pwd) {
+                modalError.textContent = 'Please enter the password';
+                modalError.classList.remove('hidden');
+                vibrate([20, 30, 20]);
+                return;
+            }
+
+            modalConfirmBtn.classList.add('loading');
+            modalConfirmBtn.disabled = true;
+            modalError.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/delete-memory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: currentMemoryId, password: pwd })
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && data.success) {
+                    vibrate([40, 80, 40]);
+                    closeLightboxInternally();
+                    closeModal();
+                    removeCardById(currentMemoryId);
+                    updateCountOnDelete();
+                    showToastG('Memory deleted successfully', 'success');
+                } else if (res.status === 403) {
+                    modalError.textContent = 'Incorrect password';
+                    modalError.classList.remove('hidden');
+                    vibrate([50, 40, 50, 40, 50]);
+                    deletePasswordInput.select();
+                    deletePasswordInput.value = '';
+                    setTimeout(() => { deletePasswordInput.value = pwd; }, 10);
+                } else {
+                    modalError.textContent = data.error || 'Failed to delete';
+                    modalError.classList.remove('hidden');
+                    vibrate([50, 50, 50]);
+                }
+            } catch (err) {
+                console.error('Delete error:', err);
+                modalError.textContent = 'Network error. Try again.';
+                modalError.classList.remove('hidden');
+                vibrate([50, 50, 50]);
+            } finally {
+                modalConfirmBtn.classList.remove('loading');
+                modalConfirmBtn.disabled = false;
+            }
+        });
+    }
+
+    function closeLightboxInternally() {
+        lightbox.classList.remove('active');
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
+        const content = lightbox.querySelector('.lightbox-content');
+        if (content) {
+            content.style.transform = '';
+            content.style.opacity = '';
+        }
+    }
+
+    function removeCardById(id) {
+        const card = galleryGrid.querySelector(`.memory-card[data-id="${id}"]`);
+        if (card) {
+            card.style.transition = 'all 0.45s cubic-bezier(0.55, 0, 0.55, 0.2)';
+            card.style.transform = 'scale(0.6) rotate(-6deg)';
+            card.style.opacity = '0';
+            setTimeout(() => {
+                card.remove();
+                checkEmptyState();
+            }, 420);
+        }
+    }
+
+    function updateCountOnDelete() {
+        const totalCards = galleryGrid.querySelectorAll('.memory-card').length;
+        const actual = Math.max(0, totalCards - 1);
+        if (galleryCount) galleryCount.textContent = actual;
+    }
+
+    function checkEmptyState() {
+        const remaining = galleryGrid.querySelectorAll('.memory-card').length;
+        if (remaining > 0) return;
+        const emptyTemplate = document.createElement('template');
+        emptyTemplate.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1;">
+                <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/>
+                    <line x1="9" y1="21" x2="9" y2="9"/>
+                </svg>
+                <h3>No Memories Yet</h3>
+                <p>Be the first to capture a beautiful moment from the wedding!</p>
+                <a href="/" class="btn-primary">Capture a Photo</a>
+            </div>`;
+        galleryGrid.appendChild(emptyTemplate.content.firstElementChild);
+    }
+
+    function showToastG(msg, type = 'info') {
+        let t = document.getElementById('__gtx');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = '__gtx';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.className = 'toast';
+        if (type) t.classList.add(type);
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._to);
+        t._to = setTimeout(() => t.classList.remove('show'), 2600);
     }
 
     function setupViewportFix() {
@@ -137,6 +319,8 @@
             const card = e.target.closest('.memory-card');
             if (!card) return;
             vibrate(20);
+
+            currentMemoryId = card.dataset.id || null;
 
             const img = card.querySelector('.memory-photo img');
             const name = card.querySelector('.memory-name');
