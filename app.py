@@ -20,6 +20,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "eya-houcem-wedding-secret-2024")
 initialize_firebase()
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "eya_houcem_2024")
+GALLERY_PASSWORD = os.getenv("GALLERY_PASSWORD", "2024")
 
 
 @app.route("/")
@@ -28,10 +29,27 @@ def index():
     return render_template("index.html", firebase_ready=firebase_ready)
 
 
-@app.route("/gallery")
+@app.route("/gallery", methods=["GET", "POST"])
 def gallery():
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if password == GALLERY_PASSWORD:
+            session["gallery_logged_in"] = True
+            return redirect(url_for("gallery"))
+        else:
+            return render_template("gallery_login.html", error="Incorrect password")
+
+    if not session.get("gallery_logged_in", False):
+        return render_template("gallery_login.html")
+
     memories = get_all_memories()
     return render_template("gallery.html", memories=memories)
+
+
+@app.route("/gallery/logout")
+def gallery_logout():
+    session.pop("gallery_logged_in", None)
+    return redirect(url_for("gallery"))
 
 
 @app.route("/save-memory", methods=["POST"])
