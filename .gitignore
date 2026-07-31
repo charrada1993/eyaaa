@@ -1,0 +1,55 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+.env
+.env.local
+*.json
+!package-lock.json
+!sample*.json
+*.pem
+*.key
+firebase-service-account.json
+eyahoucem*.json
+memories_local.json
+!templates/*.html
+
+# Virtual envs
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Debug
+test_debug.log
+quick.log
+isolated.log
+_qtest.py
+_q2.py
+_test_iso.py
+_test_fb.py
+*.log
+
+# Flask
+instance/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
