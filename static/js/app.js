@@ -403,7 +403,7 @@
             const smallFontSize = Math.max(14, Math.round(baseFontSize * 0.55));
             ctx.font = `300 italic ${smallFontSize}px 'Montserrat', sans-serif`;
             ctx.fillStyle = 'rgba(245, 230, 200, 0.9)';
-            ctx.fillText('EyA & HOUCEM  ♥  Forever', canvas.width / 2, canvas.height - 25);
+            ctx.fillText('Houssem & Eya  ♥  Forever', canvas.width / 2, canvas.height - 25);
 
             if (comment) {
                 ctx.fillStyle = 'rgba(255,255,255,0.9)';
