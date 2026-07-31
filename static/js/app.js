@@ -19,6 +19,7 @@
         successMessage: document.getElementById('successMessage'),
         captureBtn: document.getElementById('captureBtn'),
         switchCameraBtn: document.getElementById('switchCameraBtn'),
+        cameraFlash: document.getElementById('cameraFlash'),
         fileInput: document.getElementById('fileInput'),
         uploadArea: document.getElementById('uploadArea'),
         nameInput: document.getElementById('nameInput'),
@@ -36,6 +37,12 @@
         tabPanels: document.querySelectorAll('.tab-panel')
     };
 
+    function vibrate(pattern) {
+        try {
+            if (navigator.vibrate) navigator.vibrate(pattern);
+        } catch (e) {}
+    }
+
     function init() {
         setupTabs();
         setupCamera();
@@ -47,6 +54,32 @@
         setupRetakeButton();
         setupAnotherPhotoButton();
         setupSaveButton();
+        setupSmoothScroll();
+        setupViewportFix();
+    }
+
+    function setupSmoothScroll() {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href.length <= 1) return;
+                const target = document.querySelector(href);
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    }
+
+    function setupViewportFix() {
+        const setVh = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        setVh();
+        window.addEventListener('resize', setVh);
+        window.addEventListener('orientationchange', setVh);
     }
 
     function showToast(message, type) {
@@ -65,6 +98,7 @@
                 elements.tabPanels.forEach(p => p.classList.remove('active'));
                 btn.classList.add('active');
                 document.querySelector(`[data-panel="${target}"]`).classList.add('active');
+                vibrate(10);
 
                 if (target === 'camera') {
                     startCamera();
@@ -132,15 +166,23 @@
         elements.captureBtn.addEventListener('click', () => {
             if (!state.cameraReady) {
                 showToast('Camera not ready. Please wait or use upload.', 'error');
+                vibrate([20, 50, 20]);
                 return;
             }
-            capturePhoto();
+            vibrate(35);
+            if (elements.cameraFlash) {
+                elements.cameraFlash.classList.remove('active');
+                void elements.cameraFlash.offsetWidth;
+                elements.cameraFlash.classList.add('active');
+            }
+            setTimeout(() => capturePhoto(), 120);
         });
     }
 
     function setupSwitchCamera() {
         elements.switchCameraBtn.addEventListener('click', async () => {
             state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+            vibrate(20);
             await startCamera();
         });
     }
@@ -440,6 +482,7 @@
 
     function setupRetakeButton() {
         elements.retakeBtn.addEventListener('click', () => {
+            vibrate(15);
             state.capturedImage = null;
             state.originalImageData = null;
             elements.nameInput.value = '';
@@ -504,6 +547,7 @@
                 elements.previewContainer.classList.add('hidden');
                 elements.successMessage.classList.remove('hidden');
                 showToast('Memory saved successfully! ♥', 'success');
+                vibrate([40, 60, 40]);
             } else {
                 throw new Error(result.error || 'Failed to save');
             }
@@ -511,6 +555,7 @@
             console.error('Save error:', err);
             elements.loadingOverlay.classList.add('hidden');
             showToast('Error saving memory. Please try again.', 'error');
+            vibrate([50, 50, 50, 50, 50]);
             btnText.style.display = '';
             spinner.classList.add('hidden');
             elements.saveBtn.disabled = !(elements.nameInput.value.trim() && state.capturedImage);
